@@ -8,8 +8,12 @@ const {logger} = require('./common');
 const gatewayId = config.get('mqtt.gatewayId');
 const host = config.get('mqtt.host');
 const port = config.get('mqtt.port');
-const certPath = config.get('mqtt.authentication.certPath');
-const keyPath = config.get('mqtt.authentication.keyPath');
+
+//const certPath = config.get('mqtt.authentication.certPath');
+//const keyPath = config.get('mqtt.authentication.keyPath');
+
+const username = config.get('mqtt.authentication.username');
+const password = config.get('mqtt.authentication.password');
 
 class MqttClient extends EventEmitter {
 
@@ -20,8 +24,10 @@ class MqttClient extends EventEmitter {
             host: host,
             port: port,
             protocol: 'mqtts',
-            cert: fs.readFileSync(certPath),
-            key: fs.readFileSync(keyPath),
+            username: username,
+            password: password,
+            //cert: fs.readFileSync(certPath),
+            //key: fs.readFileSync(keyPath),
             rejectUnauthorized: false
         }
 

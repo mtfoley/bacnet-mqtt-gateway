@@ -12,7 +12,7 @@ Vue.component('whois', {
     methods: {
         whois() {
             this.loading = true;
-            axios.put('http://localhost:8082/api/bacnet/scan').then(response => {
+            axios.put('/api/bacnet/scan').then(response => {
                 this.devices = response.data;
                 this.loading = false;
             });
@@ -26,13 +26,14 @@ Vue.component('device-scan', {
             loading: false,
             deviceId: null,
             address: null,
+            saveConfig: false,
             objects: null
         }
     },
     methods: {
         scanDevice() {
             this.loading = true;
-            axios.put('http://localhost:8082/api/bacnet/' + this.deviceId + '/objects', {
+            axios.put('/api/bacnet/' + this.deviceId + '/objects?saveConfig='+this.saveConfig, {
                 deviceId: this.deviceId,
                 address: this.address
             }).then(response => {
