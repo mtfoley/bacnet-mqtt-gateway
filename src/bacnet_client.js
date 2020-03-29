@@ -1,6 +1,7 @@
 const bacnet = require('bacstack');
 const { scheduleJob } = require('node-schedule');
 const { EventEmitter } = require('events');
+const appConfig = require('config');
 const { BacnetConfig } = require('./bacnet_config');
 const { DeviceObjectId, DeviceObject, logger } = require('./common');
 
@@ -12,14 +13,19 @@ class BacnetClient extends EventEmitter {
         this.client.on('iAm', (device) => {
             this.emit('deviceFound', device);
         });
-
+        this.jobs = {};
         this.bacnetConfig = new BacnetConfig();
         this.bacnetConfig.on('configLoaded', (config) => {
-            this.startPolling(config.device, config.objects, config.polling.schedule);
+            this.startPolling(config.device, config.objects, config.polling.schedule||appConfig.bacnet.defaultSchedule);
         })
         this.bacnetConfig.load();
     }
-
+    destroy(){
+        logger.log('info','destroy BacnetClient');
+        this.stopPolling();
+        this.client.removeAllListeners();
+        this.removeAllListeners();
+    }
     _readObjectList(deviceAddress, deviceId, callback) {
         // Read Device Object
         const requestArray = [{
@@ -45,7 +51,6 @@ class BacnetClient extends EventEmitter {
             });
         });
     }
-
     _readObjectFull(deviceAddress, type, instance) {
         return this._readObject(deviceAddress, type, instance, [
             { id: bacnet.enum.PropertyIds.PROP_OBJECT_IDENTIFIER },
@@ -59,8 +64,8 @@ class BacnetClient extends EventEmitter {
 
     _readObjectPresentValue(deviceAddress, type, instance) {
         return this._readObject(deviceAddress, type, instance, [
-            { id: bacnet.enum.PropertyIds.PROP_PRESENT_VALUE },
-            { id: bacnet.enum.PropertyIds.PROP_OBJECT_NAME}
+            { id: bacnet.enum.PropertyIds.PROP_PRESENT_VALUE }//,
+//            { id: bacnet.enum.PropertyIds.PROP_OBJECT_NAME}
         ]);
     }
 
@@ -93,8 +98,8 @@ class BacnetClient extends EventEmitter {
         return new DeviceObject(deviceObjectId, name, description, type, units, presentValue);
     }
 
-    scanForDevices() {
-        this.client.whoIs();
+    scanForDevices(params) {
+        this.client.whoIs(params);
     }
 
     scanDevice(device) {
@@ -104,9 +109,21 @@ class BacnetClient extends EventEmitter {
                 if (!err) {
                     const objectArray = result.values[0].values[0].value;
                     const promises = [];
-
+                    const valueTypes = [
+                        bacnet.enum.ObjectTypes.OBJECT_ANALOG_INPUT,
+                        bacnet.enum.ObjectTypes.OBJECT_ANALOG_OUTPUT ,
+                        bacnet.enum.ObjectTypes.OBJECT_ANALOG_VALUE ,
+                        bacnet.enum.ObjectTypes.OBJECT_BINARY_INPUT ,
+                        bacnet.enum.ObjectTypes.OBJECT_BINARY_OUTPUT ,
+                        bacnet.enum.ObjectTypes.OBJECT_BINARY_VALUE ,
+                        bacnet.enum.ObjectTypes.OBJECT_MULTI_STATE_INPUT ,
+                        bacnet.enum.ObjectTypes.OBJECT_MULTI_STATE_OUTPUT ,
+                        bacnet.enum.ObjectTypes.OBJECT_MULTI_STATE_VALUE
+                    ];
                     objectArray.forEach(object => {
-                        promises.push(this._readObjectFull(device.address, object.value.type, object.value.instance));
+                        if(valueTypes.includes(object.value.type)){
+                            promises.push(this._readObjectFull(device.address, object.value.type, object.value.instance));
+                        }
                     });
 
                     Promise.all(promises).then((result) => {
@@ -128,7 +145,8 @@ class BacnetClient extends EventEmitter {
 
     startPolling(device, objects, scheduleExpression) {
         logger.log('info', `Schedule polling for device ${device.address} with expression ${scheduleExpression}`);
-        scheduleJob(scheduleExpression, () => {
+        this.stopPolling(device);
+        this.jobs[device.deviceId] = scheduleJob(scheduleExpression, () => {
             logger.log('info', 'Fetching device object values');
             const promises = [];
             objects.forEach(deviceObject => {
@@ -141,21 +159,35 @@ class BacnetClient extends EventEmitter {
                 successfulResults.forEach(object => {
                     const objectId = object.values[0].objectId.type + '_' + object.values[0].objectId.instance;
                     const presentValue = this._findValueById(object.values[0].values, bacnet.enum.PropertyIds.PROP_PRESENT_VALUE);
-                    const objectName = this._findValueById(object.values[0].values, bacnet.enum.PropertyIds.PROP_OBJECT_NAME);
+                    //const objectName = this._findValueById(object.values[0].values, bacnet.enum.PropertyIds.PROP_OBJECT_NAME);
 
-                    values[objectId] = {};
-	                  values[objectId].value = presentValue;
-	                  values[objectId].name = objectName;
+                    values[objectId] = {value:presentValue};
+	                  //values[objectId].name = objectName;
                 });
                 this.emit('values', device, values);
             }).catch(function (error) {
                 logger.log('error', `Error whilte fetching values: ${error}`);
             });
         });
+        this.emit('startPolling',device,scheduleExpression);
     }
-
+    stopPolling(device){
+        if(!device){
+            for(var deviceId in this.jobs){
+                this.stopPolling({deviceId});
+            }
+        } else {
+            if(this.jobs[device.deviceId]) this.jobs[device.deviceId].cancel();
+            this.emit('stopPolling',device);
+        }
+    }
     saveConfig(config) {
         this.bacnetConfig.save(config);
+    }
+    deactivate(params){
+        this.stopPolling(params);
+        this.bacnetConfig.deactivate(params.deviceId);
+        this.emit('deactivate',params.deviceId);
     }
 }
 

@@ -31,7 +31,9 @@ class BacnetConfig extends EventEmitter {
             }
         });
     }
-
+    unload(){
+        this.emit('configUnloaded');
+    }
     save(deviceConfig) {
         const filename = `device.${deviceConfig.device.deviceId}.json`;
         fs.writeFile(devicesFolder + filename, JSON.stringify(deviceConfig, null, 4), function (err) {
@@ -42,9 +44,24 @@ class BacnetConfig extends EventEmitter {
             }
         });
     }
-
+    deactivate(deviceId){
+        const filename = devicesFolder + `device.${deviceId}.json`;
+        const newFileName = devicesFolder + `_device.${deviceId}.json`;
+        fs.rename(filename,newFileName,(err)=>{
+            if(err) logger.log('error',`Error while deactivating config file: ${err}`);
+            else logger.log('info',`Config file '${filename} successfully deactivated.`);
+        })
+    }
+    activate(deviceId){
+        const filename = devicesFolder + `_device.${deviceId}.json`;
+        const newFileName = devicesFolder + `device.${deviceId}.json`;
+        fs.rename(filename,newFileName,(err)=>{
+            if(err) logger.log('error',`Error while activating config file: ${err}`);
+            else logger.log('info',`Config file '${filename} successfully activated.`);
+        })
+    }
     delete(deviceId) {
-        const filename = `device.${deviceId}.json`;
+        const filename = devicesFolder + `device.${deviceId}.json`;
         fs.unlink(filename, (err) => {
             if (err) {
                 logger.log('error', `Error while deleting config file: ${err}`);

@@ -4,12 +4,13 @@
         "host": "m16.cloudmqtt.com",
         "port": 27775,
         "authentication": {
-            "username": "",
-            "password": ""
+            "username": "gprsbstl",
+            "password": "uYAzK6Q8jCSu"
         }
     },
     "bacnet": {
-        "configFolder": "./devices/"
+        "configFolder": "./devices/",
+        "defaultSchedule": "*/30 * * * * *"
     },
     "httpServer": {
         "enabled": true,
