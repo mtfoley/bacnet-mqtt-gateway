@@ -6,7 +6,8 @@
         "authentication": {
             "username": "gprsbstl",
             "password": "uYAzK6Q8jCSu"
-        }
+        },
+        "defaultSchedule": "*/30 * * * * *"
     },
     "bacnet": {
         "configFolder": "./devices/",

@@ -3,20 +3,17 @@ const { scheduleJob } = require('node-schedule');
 const { EventEmitter } = require('events');
 const appConfig = require('config');
 const { BacnetConfig } = require('./bacnet_config');
-const { DeviceObjectId, DeviceObject, logger } = require('./common');
+const { DeviceObjectId, DeviceObject, DeviceInfo, logger } = require('./common');
 
 class BacnetClient extends EventEmitter {
 
     constructor() {
         super();
         this.client = new bacnet({ apduTimeout: 10000 });
-        this.client.on('iAm', (device) => {
-            this.emit('deviceFound', device);
-        });
         this.jobs = {};
         this.bacnetConfig = new BacnetConfig();
         this.bacnetConfig.on('configLoaded', (config) => {
-            this.startPolling(config.device, config.objects, config.polling.schedule||appConfig.bacnet.defaultSchedule);
+            this.startPolling(config.device, config.objects, config.polling.schedule||appConfig.get("bacnet.defaultSchedule"));
         })
         this.bacnetConfig.load();
     }
@@ -58,7 +55,8 @@ class BacnetClient extends EventEmitter {
             { id: bacnet.enum.PropertyIds.PROP_OBJECT_TYPE },
             { id: bacnet.enum.PropertyIds.PROP_DESCRIPTION },
             { id: bacnet.enum.PropertyIds.PROP_UNITS },
-            { id: bacnet.enum.PropertyIds.PROP_PRESENT_VALUE }
+            { id: bacnet.enum.PropertyIds.PROP_PRESENT_VALUE },
+            { id: bacnet.enum.PropertyIds.PROP_STATE_TEXT }
         ]);
     }
 
@@ -68,17 +66,45 @@ class BacnetClient extends EventEmitter {
 //            { id: bacnet.enum.PropertyIds.PROP_OBJECT_NAME}
         ]);
     }
-
+    _readDeviceInfo(deviceAddress, deviceId, callback) {
+        // Read Device Object
+        const requestArray = [{
+            objectId: { type: bacnet.enum.ObjectTypes.OBJECT_DEVICE, instance: deviceId },
+            properties: [
+                { id: bacnet.enum.PropertyIds.PROP_OBJECT_NAME },
+                { id: bacnet.enum.PropertyIds.PROP_DESCRIPTION },
+                { id: bacnet.enum.PropertyIds.PROP_PROTOCOL_SERVICES_SUPPORTED }
+            ]
+        }];
+        this.client.readPropertyMultiple(deviceAddress, requestArray, function(err,res){
+            res.values[0].values.address = deviceAddress;
+            res.values[0].values.deviceId = deviceId;
+            callback(err,res);            
+        });
+    }
     _findValueById(properties, id) {
         const property = properties.find(function (element) {
             return element.id === id;
         });
         if (property && property.value && property.value.length > 0) {
-            return property.value[0].value;
+            if(property.value.length > 1) return property.value.map((obj)=>{return obj.value});
+            else return property.value[0].value;
         } else {
             return null;
         }
     };
+    _mapToDeviceInfo(object) {
+        if (!object || !object.values) {
+            return null;
+        }
+        const objectProperties = object.values[0].values;
+        const deviceId = objectProperties.deviceId;
+        const address = objectProperties.address;
+        const name = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_OBJECT_NAME);
+        const description = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_DESCRIPTION);
+        const servicesSupported = this._findValueById(objectProperties,bacnet.enum.PropertyIds.PROP_PROTOCOL_SERVICES_SUPPORTED);
+        return new DeviceInfo(address,deviceId, name, description, servicesSupported);
+    }
 
     _mapToDeviceObject(object) {
         if (!object || !object.values) {
@@ -87,19 +113,39 @@ class BacnetClient extends EventEmitter {
 
         const objectInfo = object.values[0].objectId;
         const deviceObjectId = new DeviceObjectId(objectInfo.type, objectInfo.instance);
-
         const objectProperties = object.values[0].values;
         const name = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_OBJECT_NAME);
         const description = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_DESCRIPTION);
         const type = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_OBJECT_TYPE);
         const units = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_UNITS);
         const presentValue = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_PRESENT_VALUE);
-
-        return new DeviceObject(deviceObjectId, name, description, type, units, presentValue);
+        const stateText = this._findValueById(objectProperties, bacnet.enum.PropertyIds.PROP_STATE_TEXT);
+        return new DeviceObject(deviceObjectId, name, description, type, units, presentValue, stateText);
     }
 
     scanForDevices(params) {
-        this.client.whoIs(params);
+        const self = this;
+        return new Promise((resolve,reject)=>{
+            const deviceList = [];
+            const addDevice = function(err,res){
+                const deviceInfo = self._mapToDeviceInfo(res);
+                deviceList.push(deviceInfo);    
+            }
+            const listener = function(device){
+                self._readDeviceInfo(device.address, device.deviceId, addDevice);
+            };
+            try{
+                self.client.on('iAm',listener);
+                self.client.whoIs(params);
+            } catch(e){
+                reject(e);
+            }
+            setTimeout(function(){
+                self.client.off('iAm',listener);
+                resolve(deviceList);
+
+            },3000);
+        });
     }
 
     scanDevice(device) {
@@ -159,10 +205,7 @@ class BacnetClient extends EventEmitter {
                 successfulResults.forEach(object => {
                     const objectId = object.values[0].objectId.type + '_' + object.values[0].objectId.instance;
                     const presentValue = this._findValueById(object.values[0].values, bacnet.enum.PropertyIds.PROP_PRESENT_VALUE);
-                    //const objectName = this._findValueById(object.values[0].values, bacnet.enum.PropertyIds.PROP_OBJECT_NAME);
-
                     values[objectId] = {value:presentValue};
-	                  //values[objectId].name = objectName;
                 });
                 this.emit('values', device, values);
             }).catch(function (error) {

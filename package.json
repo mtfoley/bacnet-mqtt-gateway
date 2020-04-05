@@ -17,8 +17,7 @@
     "mqtt": "^2.18.8",
     "node-schedule": "^1.3.2",
     "npm": "^6.14.4",
-    "winston": "^3.2.1",
-    "wireless-tools": "^0.19.0"
+    "winston": "^3.2.1"
   },
   "devDependencies": {}
 }

@@ -29,14 +29,10 @@ class Server {
     }
 
     _scanForDevices(req, res) {
-        const devices = [];
-        const eventListener = (device) => devices.push(device);
         this.bacnetClient.on('deviceFound', eventListener);
-        this.bacnetClient.scanForDevices();
-        setTimeout(() => {
-            this.bacnetClient.removeListener('deviceFound', eventListener);
+        this.bacnetClient.scanForDevices().then(devices=>{
             res.send(devices);
-        }, 5000);
+        });
     }
 
     _scanDevice(req, res) {

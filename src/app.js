@@ -13,9 +13,6 @@ var bc = null;
 // called when device has been found
 
 
-if (httpServerEnabled) {
-    new Server(bc);
-}
 
 // some default init logic when starting the gateway
 function stop() {
@@ -25,14 +22,19 @@ function stop() {
 function start() {
     mc = new MqttClient();
     bc = new BacnetClient();
-    mc.on('remoteDiscover',(params)=>{ bc.scanForDevices(params); });
-    mc.on('remoteScan',(params)=>{ bc.scanDevice(params); });
+    mc.on('remoteDiscover',(params)=>{
+        bc.scanForDevices(params).then(deviceInfoObjects => {
+            mc.publishCommandResult({result:'discover',devices: deviceInfoObjects})
+        }); 
+    });
+    mc.on('remoteScan',(params)=>{ bc.scanDevice(params) });
     mc.on('remoteScanSave',(params)=>{
         const device = {deviceId: params.deviceId, address: params.address};
         bc.scanDevice(device).then(deviceObjects => {
             const cfg = {
                 'device': device,
-                'objects': deviceObjects
+                'objects': deviceObjects,
+                'polling':  config.get("bacnet.defaultSchedule")
             }
             bc.saveConfig(cfg);
             bc.startPolling(cfg.device, cfg.objects, cfg.polling.schedule);    
@@ -49,15 +51,16 @@ function start() {
     bc.on('deviceSaved', (device,objects) => {
         mc.publishCommandResult({result:'deviceSaved',device,objects});
     });
-    bc.on('deviceFound', (device) => {
-        mc.publishCommandResult({result:'deviceFound',device});
-    });
     bc.on('deviceObjects', (device,objects) => {
         mc.publishCommandResult({result:'deviceObjects',device,objects});
     });
+    if (httpServerEnabled) {
+        new Server(bc);
+    }
 }
 function restart(){
     stop();
     start();
+    
 }
 start();

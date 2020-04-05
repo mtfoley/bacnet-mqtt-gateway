@@ -1,5 +1,6 @@
 const mqtt = require('mqtt');
 const config = require('config');
+const { scheduleJob } = require('node-schedule');
 const EventEmitter = require('events');
 const {logger} = require('./common');
 
@@ -47,6 +48,9 @@ class MqttClient extends EventEmitter {
         this.client.on('error', function (err) { logger.log('error', err); });
         this.client.subscribe('devices/'+gatewayId+'/commands');
         this.client.subscribe('devices/'+gatewayId+'/update');
+        scheduleJob(config.get("mqtt.defaultSchedule"), () => {
+            this.client.publish('devices/presence',JSON.stringify({gatewayId:gatewayId}));
+        });
     };
     
     _onMessage(topic,msg) {
@@ -77,7 +81,7 @@ class MqttClient extends EventEmitter {
     publishCommandResult(messageJson){
         const message = JSON.stringify(messageJson);
         const topic = 'devices/' + gatewayId + '/commandResult';
-        logger.log('info', 'Publish message to MQTT Broker');
+        logger.log('info', 'Publish command results to MQTT Broker');
         this.client.publish(topic, message);
 
     }
