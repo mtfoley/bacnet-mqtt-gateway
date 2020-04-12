@@ -7,18 +7,33 @@ const { DeviceObjectId, DeviceObject, DeviceInfo, logger } = require('./common')
 
 class BacnetClient extends EventEmitter {
 
-    constructor() {
+    constructor(collector) {
         super();
+        this.collector = collector;
         this.client = new bacnet({ apduTimeout: 10000 });
         this.jobs = {};
         this.bacnetConfig = new BacnetConfig();
         this.bacnetConfig.on('configLoaded', (config) => {
             this.startPolling(config.device, config.objects, config.polling.schedule||appConfig.get("bacnet.defaultSchedule"));
-        })
+        });
         this.bacnetConfig.load();
     }
+    _trendValues(values){
+        const ts = (new Date()).getTime();
+        const promises = [];
+        for(var k in values){
+            const id = "bacnet_"+k;
+            const data = {ts:ts,val:values[k]};
+            promises.push(this.collector.enqueue(id,[data]));
+        }
+        Promise.all(promises).then(()=>{
+            logger.info(`BACnet ${promises.length} Values Trended`);
+        }).catch((error)=>{
+            logger.error('BACnet Values Trending Error: ',error);
+        })
+    }
     destroy(){
-        logger.log('info','destroy BacnetClient');
+        logger.info('BACnet Client Destroy');
         this.stopPolling();
         this.client.removeAllListeners();
         this.removeAllListeners();
@@ -179,11 +194,11 @@ class BacnetClient extends EventEmitter {
                         this.emit('deviceObjects', device, deviceObjects);
                         resolve(deviceObjects);
                     }).catch((error) => {
-                        logger.log('error', `Error whilte fetching objects: ${error}`);
+                        logger.log('error', `Error while fetching objects: ${error}`);
                         reject(error);
                     });
                 } else {
-                    logger.log('error', `Error whilte fetching objects: ${err}`);
+                    logger.log('error', `Error while fetching objects: ${err}`);
                 }
             });
         });
@@ -192,6 +207,12 @@ class BacnetClient extends EventEmitter {
     startPolling(device, objects, scheduleExpression) {
         logger.log('info', `Schedule polling for device ${device.address} with expression ${scheduleExpression}`);
         this.stopPolling(device);
+        const trendObjects = [];
+        objects.forEach((item)=>{
+            const id = "bacnet_"+device.deviceId+"_"+item.objectId.type+"_"+item.objectId.instance;
+            trendObjects.push(Object.assign(item,{id}));
+        });
+        this.collector.update(trendObjects);
         this.jobs[device.deviceId] = scheduleJob(scheduleExpression, () => {
             logger.log('info', 'Fetching device object values');
             const promises = [];
@@ -205,8 +226,9 @@ class BacnetClient extends EventEmitter {
                 successfulResults.forEach(object => {
                     const objectId = object.values[0].objectId.type + '_' + object.values[0].objectId.instance;
                     const presentValue = this._findValueById(object.values[0].values, bacnet.enum.PropertyIds.PROP_PRESENT_VALUE);
-                    values[objectId] = {value:presentValue};
+                    values[device.deviceId+"_"+objectId] = presentValue;
                 });
+                this._trendValues(values);
                 this.emit('values', device, values);
             }).catch(function (error) {
                 logger.log('error', `Error whilte fetching values: ${error}`);

@@ -1,0 +1,37 @@
+{
+    "mqtt": {
+        "gatewayId": "0x132",
+        "host": "mqtt.com",
+        "port": 18883,
+        "authentication": {
+            "username": "",
+            "password": ""
+        },
+        "defaultSchedule": "*/30 * * * * *"
+    },
+    "trends": {
+        "indexFile": "./trends/index.json",
+        "dataFolder": "./trends/"
+    },
+    "bacnet": {
+        "configFolder": "./devices/",
+        "defaultSchedule": "*/30 * * * * *"
+    },
+    "haystack": {
+        "gatewayId": "0x132",
+        "protocol": "https",
+        "host": "haystack.org",
+        "project":"project",
+        "port": 443,
+        "authentication": {
+            "username": "username",
+            "password": "password"    
+        },
+        "pingSchedule": "*/30 * * * * *",
+        "pushSchedule": "*/5 * * * *"
+    },
+    "httpServer": {
+        "enabled": true,
+        "port": 8082
+    }
+}

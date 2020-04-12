@@ -1,6 +1,11 @@
 # Specific device files
 devices/*.json
 
+# Config File
+config/default.json
+# trends files
+trends/*
+
 # Logs
 logs
 *.log

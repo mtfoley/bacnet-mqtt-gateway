@@ -1,10 +1,14 @@
 const { createLogger, format, transports } = require('winston');
+const logFormat = format.printf(({ level, message, label, timestamp }) => {
+    return `${timestamp} [${level}]: ${message}`;
+});
 const logger = createLogger({
     format: format.combine(
         format.timestamp({
             format: 'YYYY-MM-DD HH:mm:ss'
         }),
-        format.json()
+        logFormat
+        //format.json()
     ),
     transports: [new transports.Console()],
 });

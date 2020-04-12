@@ -9,10 +9,13 @@
   "author": "Dennis Nobel",
   "license": "Apache2",
   "dependencies": {
+    "@skyfoundry/haystack-auth": "git+https://bitbucket.org/skyfoundry/haystack-auth-node.git",
+    "axios": "^0.19.2",
     "bacstack": "0.0.1-beta.13",
     "body-parser": "^1.18.3",
     "config": "^3.0.1",
     "cors": "^2.8.5",
+    "dayjs": "^1.8.24",
     "express": "^4.16.4",
     "mqtt": "^2.18.8",
     "node-schedule": "^1.3.2",

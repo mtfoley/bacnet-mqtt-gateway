@@ -34,18 +34,18 @@ class MqttClient extends EventEmitter {
             this._onConnect();
         });
         this.client.on('error', (error) => {
-            logger.log('error', 'Could not connect: ' + err.message);
+            logger.error('MQTT Connect Error: ' + error.message);
         });
     }
     destroy(){
-        logger.log('info','destroy MqttClient');
+        logger.info('MQTT Client Destroy');
         this.client.removeAllListeners();
         this.removeAllListeners();
     }
     _onConnect() {
-        logger.log('info', 'Client connected');
+        logger.info('MQTT Client Connected');
         this.client.on('message', (topic,msg) => this._onMessage(topic,msg));
-        this.client.on('error', function (err) { logger.log('error', err); });
+        this.client.on('error', function (err) { logger.info('MQTT Error: '+err); });
         this.client.subscribe('devices/'+gatewayId+'/commands');
         this.client.subscribe('devices/'+gatewayId+'/update');
         scheduleJob(config.get("mqtt.defaultSchedule"), () => {
@@ -54,7 +54,7 @@ class MqttClient extends EventEmitter {
     };
     
     _onMessage(topic,msg) {
-        logger.log('info', `[${topic}] Received message ${msg}`);
+        logger.info(`MQTT Received Message [${topic}]`);
         try{
             const messageObj = JSON.parse(msg);
             if(messageObj.op == 'discover') this.emit('remoteDiscover',messageObj);
@@ -73,15 +73,14 @@ class MqttClient extends EventEmitter {
     publishMessage(messageJson) {
         const message = JSON.stringify(messageJson);
         const topic = 'devices/' + gatewayId + '/pollResult';
-
-        logger.log('info', 'Publish message to MQTT Broker');
+        logger.info(`MQTT Publish Message [${topic}]`);
         this.client.publish(topic, message);
     }
 
     publishCommandResult(messageJson){
         const message = JSON.stringify(messageJson);
         const topic = 'devices/' + gatewayId + '/commandResult';
-        logger.log('info', 'Publish command results to MQTT Broker');
+        logger.info(`MQTT Publish Command Result [${topic}]`);
         this.client.publish(topic, message);
 
     }

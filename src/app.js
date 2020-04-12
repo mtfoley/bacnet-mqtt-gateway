@@ -2,6 +2,8 @@ const { BacnetClient } = require('./bacnet_client');
 const { Server } = require('./server');
 const { logger } = require('./common');
 const { MqttClient } = require('./mqtt_client');
+const { HaystackClient} = require('./haystack_client');
+const { Collector } = require('./collector');
 const config = require('config');
 // load configs
 const httpServerEnabled = config.get('httpServer.enabled');
@@ -9,6 +11,8 @@ const httpServerEnabled = config.get('httpServer.enabled');
 // init MQTT and BACnet clients
 var mc = null;
 var bc = null;
+var hc = null;
+var coll = null;
 
 // called when device has been found
 
@@ -18,10 +22,15 @@ var bc = null;
 function stop() {
     if(mc) mc.destroy();
     if(bc) bc.destroy();
+    if(hc) hc.destroy();
+    if(coll) coll.destroy();
 }
 function start() {
+    coll = new Collector();
     mc = new MqttClient();
-    bc = new BacnetClient();
+    bc = new BacnetClient(coll);
+    hc = new HaystackClient(coll);
+    coll.rebuildIndex();
     mc.on('remoteDiscover',(params)=>{
         bc.scanForDevices(params).then(deviceInfoObjects => {
             mc.publishCommandResult({result:'discover',devices: deviceInfoObjects})
@@ -44,15 +53,33 @@ function start() {
     mc.on('remoteDeactivate',(params)=>{ bc.deactivate(params); });
     mc.on('remoteActivate',(params)=>{ bc.activate(params); });
     mc.on('remoteRestart',(params)=>{
-        logger.log('info',JSON.stringify(params));
+        logger.log('info','Remote Restart');
         restart();
     });
-    bc.on('values', (device, values) => { mc.publishMessage({device,values}); });
+    bc.on('values', (device, values) => { mc.publishMessage({device:device,values:values}); });
     bc.on('deviceSaved', (device,objects) => {
         mc.publishCommandResult({result:'deviceSaved',device,objects});
     });
     bc.on('deviceObjects', (device,objects) => {
         mc.publishCommandResult({result:'deviceObjects',device,objects});
+    });
+    hc.connect().then((header)=>{
+        logger.info('Haystack Authenticated');
+        const index = coll.getIndex();
+        const promises = [];
+        for(var k in index){
+            const trend = index[k];
+            if(trend.hasOwnProperty("haystackId")==false) promises.push(hc.commitTrend(trend));
+            else logger.info(`Trend Defined: ${trend.name} (${trend.haystackId})`);
+        }
+        logger.info(`Committing ${promises.length} trends`);
+        Promise.all(promises).then(()=>{
+            hc.startPush();
+        }).catch(error=>{
+            logger.error('Haystack Commit Error: '+error);
+        });
+    }).catch((error)=>{
+        logger.error('Haystack Authentication Error: '+error);
     });
     if (httpServerEnabled) {
         new Server(bc);
