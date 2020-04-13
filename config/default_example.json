@@ -9,9 +9,9 @@
         },
         "defaultSchedule": "*/30 * * * * *"
     },
-    "trends": {
-        "indexFile": "./trends/index.json",
-        "dataFolder": "./trends/"
+    "collector": {
+        "indexFile": "./data/index.json",
+        "dataFolder": "./data/"
     },
     "bacnet": {
         "configFolder": "./devices/",

@@ -1,6 +1,6 @@
 const config = require('config');
 const dayjs = require('dayjs');
-var utc = require('dayjs/plugin/utc')
+var utc = require('dayjs/plugin/utc');
 dayjs.extend(utc);
 const axios = require('axios').default;
 const haystackAuth = require('@skyfoundry/haystack-auth');

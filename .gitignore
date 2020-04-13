@@ -4,7 +4,7 @@ devices/*.json
 # Config File
 config/default.json
 # trends files
-trends/*
+data/*
 
 # Logs
 logs

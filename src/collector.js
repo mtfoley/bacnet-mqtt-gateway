@@ -1,13 +1,12 @@
 const fs = require('fs');
 const config = require('config');
-//const { scheduleJob } = require('node-schedule');
 const EventEmitter = require('events');
 const {logger} = require('./common');
 
 class Collector extends EventEmitter {
     constructor(){
         super();
-        this.options = config.get('trends');
+        this.options = config.get('collector');
     }
     test(){
         this.rebuildIndex().then(()=>{
@@ -68,7 +67,6 @@ class Collector extends EventEmitter {
         this.emit('destroy');
         this.detachAllListeners();
     }
-    // Enqueue a value to a trend file
     enqueue(id,data){
         return new Promise((resolve,reject)=>{
             if(id && data && data.length > 0){
@@ -124,12 +122,5 @@ class Collector extends EventEmitter {
             }
         });
     }
-    // Dequeue a trend before a timestamp
-    dequeue(id,timestamp){
-        // trend  = trend.getById(id)
-        // items = trend.queryAfter(timestamp)
-        // return items
-    }
-    
 }
 module.exports = {Collector};
