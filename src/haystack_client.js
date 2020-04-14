@@ -7,6 +7,7 @@ const haystackAuth = require('@skyfoundry/haystack-auth');
 const EventEmitter = require('events');
 const { scheduleJob } = require('node-schedule');
 const { logger } = require('./common');
+const haystackUnits = require('./haystack_bacnet_mapping.json');
 
 class HaystackClient extends EventEmitter {
 
@@ -23,23 +24,16 @@ class HaystackClient extends EventEmitter {
             HIS_READ: this._makePath('hisRead'),
             COMMIT: this._makePath('commit')
         };
-        
     }
     commitTrend(trend){
         return new Promise((resolve,reject)=>{
             const data = Object.assign({},trend);
             const key = 'haystackId';
-            data.dis = data.name;
-            delete data.name;
-            delete data.id;
             if(!trend) reject('no trend definition');
             else if(trend.hasOwnProperty(key)==true) resolve(trend);
             else {
                 this.commit(data).then((haystackData)=>{
-                    const id = haystackData.rows[0].id;
-                    data.haystackId = id;
-                    data.id = trend.id;
-                    this.collector.update(data);
+                    this.collector.update({id:trend.id,haystackId:haystackData.rows[0].id});
                     resolve(haystackData);
                 }).catch((error) => {
                     reject(error);
@@ -166,14 +160,19 @@ class HaystackClient extends EventEmitter {
         const grid = [
             "ver: \"3.0\" commit:\"add\""
         ];
-        data = Object.assign(data,{
+        let config = {
             point:"M",
+            dis:data.name,
             his:"M",
             tz:"New_York",
             kind:"Number"
-        });
-        grid.push(Object.keys(data).join(','));
-        grid.push(this._encodeZinc(data));
+        };
+        if(data.units !== null){
+            const key = ""+data.units;
+            if(haystackUnits.hasOwnProperty(key) == true) config.unit = haystackUnits[key];
+        }
+        grid.push(Object.keys(config).join(','));
+        grid.push(this._encodeZinc(config));
         return grid.join("\n");
     }
     _makePath(path){

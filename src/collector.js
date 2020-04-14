@@ -32,17 +32,21 @@ class Collector extends EventEmitter {
     rebuildIndex(){
         this.index = {};
         return new Promise((resolve,reject)=>{
-            fs.readFile(this.options.indexFile, 'utf8', (error, contents) => {
-                if (error) {
-                    logger.log('error', `Error while reading index file: ${error}`);
-                    this.index = {};
-                    return this.update({});
-                } else {
-                    this.index = JSON.parse(contents);
-                    resolve(this.index);
-                    this.emit('indexed', this.index);
-                }
-            });    
+            try {
+                fs.readFile(this.options.indexFile, 'utf8', (error, contents) => {
+                    if (error) {
+                        logger.error(`Collector Indexing Error: ${error}`);
+                        this.index = {};
+                        return this.update({});
+                    } else {
+                        this.index = JSON.parse(contents);
+                        resolve(this.index);
+                        this.emit('indexed', this.index);
+                    }
+                });        
+            } catch(error){
+                logger.error(`Collector Indexing Error: ${error}`);
+            }
         });
     }
     update(data){
