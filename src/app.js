@@ -79,7 +79,7 @@ function start() {
             logger.error('Haystack Commit Error: '+error);
         });
     }).catch((error)=>{
-        logger.error('Haystack Authentication Error: '+error);
+        logger.error('Haystack Error: '+error);
     });
     if (httpServerEnabled) {
         new Server(bc);
