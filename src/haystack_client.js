@@ -2,12 +2,15 @@ const config = require('config');
 const dayjs = require('dayjs');
 var utc = require('dayjs/plugin/utc');
 dayjs.extend(utc);
+const dns = require('dns');
 const axios = require('axios').default;
 const haystackAuth = require('@skyfoundry/haystack-auth');
 const EventEmitter = require('events');
 const { scheduleJob } = require('node-schedule');
-const { logger } = require('./common');
 const haystackUnits = require('./haystack_bacnet_mapping.json');
+const { logger } = require('./common');
+
+
 
 class HaystackClient extends EventEmitter {
 
@@ -57,7 +60,13 @@ class HaystackClient extends EventEmitter {
                         else self.hisWrite(trend.haystackId,data).then(()=>{
                             const ts = (new Date()).getTime();
                             updates.push({id:trend.id,lastUpload:ts});
-                            resolve();
+                            // resolve whether we cleanup or not?
+                            logger.info('Cleaning Up Trend ID '+trend.id);
+                            self.collector.cleanup(trend.id,ts).then(()=>{
+                                resolve();
+                            }).catch(()=>{
+                                resolve();
+                            })
                         }).catch(error=>{
                             reject(error);
                         });
@@ -224,30 +233,39 @@ class HaystackClient extends EventEmitter {
     connect(){
         const self = this;
         return new Promise((resolve,reject)=>{
-            if( !self.isLoggedIn() ){
-                const context = new haystackAuth.AuthClientContext(
-                    self.paths.ABOUT,
-                    self.options.authentication.username,
-                    self.options.authentication.password,
-                    (self.options.protocol=='https')
-                );
-                context.login((header)=>{
-                    self.authToken = header['Authorization'];
-                    axios.defaults.headers['Authorization'] = self.authToken;
-                    axios.defaults.headers.post['Content-Type'] = 'text/zinc; charset=utf-8';
-                    axios.defaults.headers['Accept'] = 'application/json';
-                    if(!self.pingJob) self.pingJob = scheduleJob(self.options.pingSchedule,()=>{
-                        self.ping();
-                    });
-                    self.emit('connected',header);
-                    resolve(header);
-                },(error)=>{
-                    reject(error);
-                })
-            } else {
-                resolve(self.authToken);
-            }
-        })
+            dns.lookup(self.options.host,(err)=>{
+                if(err){
+                    reject('DNS Error: '+err);
+                } else {
+                    if( !self.isLoggedIn() ){
+                        let context = null;
+                        try {
+                            context = new haystackAuth.AuthClientContext(
+                                self.paths.ABOUT,
+                                self.options.authentication.username,
+                                self.options.authentication.password,
+                                (self.options.protocol=='https')
+                            );    
+                        } catch(error){
+                            reject(error);
+                        }
+                        context.login((header)=>{
+                            self.authToken = header['Authorization'];
+                            axios.defaults.headers['Authorization'] = self.authToken;
+                            axios.defaults.headers.post['Content-Type'] = 'text/zinc; charset=utf-8';
+                            axios.defaults.headers['Accept'] = 'application/json';
+                            if(!self.pingJob) self.pingJob = scheduleJob(self.options.pingSchedule,()=>{
+                                self.ping();
+                            });
+                            self.emit('connected',header);
+                            resolve(header);
+                        },(error)=>{
+                            reject(error||'Authentication Error');
+                        });  
+                    }
+                }
+            });
+        });
     }
     commit(data){
         const grid = this._makeCommitGrid(data);
