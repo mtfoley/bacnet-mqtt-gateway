@@ -11,10 +11,10 @@
     },
     "collector": {
         "indexFile": "./data/index.json",
-        "dataFolder": "./data/"
+        "dataFolder": "./data"
     },
     "bacnet": {
-        "configFolder": "./devices/",
+        "configFolder": "./devices",
         "defaultSchedule": "*/30 * * * * *"
     },
     "haystack": {

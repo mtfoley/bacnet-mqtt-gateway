@@ -7,6 +7,13 @@ class Collector extends EventEmitter {
     constructor(){
         super();
         this.options = config.get('collector');
+        fs.stat(this.options.dataFolder,(error,stats)=>{
+            if(error){
+                fs.mkdir(this.options.dataFolder,{},(error)=>{
+                    if(error) logger.error('Could Not Create Collector Data Folder: '+error);
+                });
+            }
+        });
     }
     test(){
         this.rebuildIndex().then(()=>{
@@ -32,21 +39,18 @@ class Collector extends EventEmitter {
     rebuildIndex(){
         this.index = {};
         return new Promise((resolve,reject)=>{
-            try {
-                fs.readFile(this.options.indexFile, 'utf8', (error, contents) => {
-                    if (error) {
-                        logger.error(`Collector Indexing Error: ${error}`);
-                        this.index = {};
-                        return this.update({});
-                    } else {
-                        this.index = JSON.parse(contents);
-                        resolve(this.index);
-                        this.emit('indexed', this.index);
-                    }
-                });        
-            } catch(error){
-                logger.error(`Collector Indexing Error: ${error}`);
-            }
+            fs.readFile(this.options.indexFile, 'utf8', (error, contents) => {
+                if (error) {
+                    logger.info(`Collector Index File Not Found`);
+                    this.index = {};
+                    this.emit('indexed', this.index);
+                    return this.update({});
+                } else {
+                    this.index = JSON.parse(contents);
+                    resolve(this.index);
+                    this.emit('indexed', this.index);
+                }
+            });        
         });
     }
     update(data){
@@ -65,6 +69,7 @@ class Collector extends EventEmitter {
                     resolve();
                 }
             });
+            
         });
     }
     destroy(){
@@ -76,7 +81,7 @@ class Collector extends EventEmitter {
             if(id && data && data.length > 0){
 
                 const lines = data.map(JSON.stringify).join("\n")+"\n";
-                const file = this.options.dataFolder+id+'.dat';
+                const file = this.options.dataFolder+"/"+id+'.dat';
                 fs.appendFile(file,lines,'utf8',(error)=>{
                     if(error){
                         logger.error(error);
@@ -87,6 +92,30 @@ class Collector extends EventEmitter {
                 });
             } else {
                 const error = 'ID and Non-Empty Data Required to Write Data to File';
+                logger.error(error);
+                reject(error);
+            }
+        });
+    }
+    cleanup(id,start){
+        return new Promise((resolve,reject)=>{
+            if(id && start){
+                this.query(id,start).then((data)=>{
+                    const lines = data.map(JSON.stringify).join("\n")+"\n";
+                    const file = this.options.dataFolder+"/"+id+'.dat';
+                    fs.writeFile(file,lines,'utf8',(error)=>{
+                        if(error){
+                            logger.error(error);
+                            reject(error);
+                        } else {
+                            resolve(id);
+                        }
+                    });
+                }).catch(()=>{
+                    resolve(id);
+                })
+            } else {
+                const error = 'ID and Timestamp Required to Clean Up Data File';
                 logger.error(error);
                 reject(error);
             }
@@ -110,7 +139,7 @@ class Collector extends EventEmitter {
         return new Promise((resolve,reject)=>{
             if(!start) start = 0;
             if(id){
-                const file = this.options.dataFolder+id+'.dat';
+                const file = this.options.dataFolder+"/"+id+'.dat';
                 fs.readFile(file,'utf8',(error,contents)=>{
                     if(error){
                         logger.error(error);
