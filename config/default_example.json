@@ -1,6 +1,5 @@
 {
     "mqtt": {
-        "gatewayId": "0x132",
         "host": "mqtt.com",
         "port": 18883,
         "authentication": {

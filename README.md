@@ -199,7 +199,7 @@ I will be adding the following docs in a later commit:
 ## CODE TODO
 
 I will be adding the following functionality in a later commit:
-* Use more generically derived value for "gatewayId" value instead of that found in `config/default.json` file (e.g. using node-machine-id package?).
+* ~~ Use more generically derived value for "gatewayId" value instead of that found in `config/default.json` file (e.g. using node-machine-id package?). ~~
 * Detect and record ReadPropertyMultiple support in a device. Use this support value to more effectively read objects from BACnet devices.
 * Use templates in device polling configuration file(s), to account for multiple devices with the same effective objects lists (very common, especially with B-ASC profiles).
 * Update device polling configurations to allow designation of whether or not to trend an object value.

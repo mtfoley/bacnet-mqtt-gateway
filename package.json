@@ -18,6 +18,7 @@
     "dayjs": "^1.8.24",
     "express": "^4.16.4",
     "mqtt": "^2.18.8",
+    "node-machine-id": "^1.1.12",
     "node-schedule": "^1.3.2",
     "npm": "^6.14.4",
     "winston": "^3.2.1"

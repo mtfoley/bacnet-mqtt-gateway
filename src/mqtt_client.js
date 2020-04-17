@@ -1,11 +1,13 @@
 const mqtt = require('mqtt');
 const config = require('config');
+const { machineIdSync } = require('node-machine-id');
 const { scheduleJob } = require('node-schedule');
 const EventEmitter = require('events');
 const {logger} = require('./common');
 
 // load configs
-const gatewayId = config.get('mqtt.gatewayId');
+const gatewayId = machineIdSync(true);
+// const gatewayId = config.get('mqtt.gatewayId');
 const host = config.get('mqtt.host');
 const port = config.get('mqtt.port');
 
