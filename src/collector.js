@@ -39,7 +39,7 @@ class Collector extends EventEmitter {
     rebuildIndex(){
         this.index = {};
         return new Promise((resolve,reject)=>{
-            fs.readFile(this.options.indexFile, 'utf8', (error, contents) => {
+            fs.readFile(this.options.dataFolder+"/index.json", 'utf8', (error, contents) => {
                 if (error) {
                     logger.info(`Collector Index File Not Found`);
                     this.index = {};
@@ -59,7 +59,7 @@ class Collector extends EventEmitter {
             updates.forEach((d)=>{
                 if(d.id) this.index[d.id] = Object.assign(this.index[d.id]||{},d);
             });
-            fs.writeFile(this.options.indexFile,JSON.stringify(this.index),'utf8',(error)=>{
+            fs.writeFile(this.options.dataFolder+"/index.json",JSON.stringify(this.index),'utf8',(error)=>{
                 if(error) {
                     logger.error(`Error while writing index file: ${error}`);
                     this.emit('index-update-error',error);

@@ -9,7 +9,6 @@
         "defaultSchedule": "*/30 * * * * *"
     },
     "collector": {
-        "indexFile": "./data/index.json",
         "dataFolder": "./data"
     },
     "bacnet": {

@@ -40,12 +40,11 @@ For BACnet connection the [Node BACstack](https://github.com/fh1ch/node-bacstack
     The Haystack Client has been written to authenticate with a Haystack Compliant Server, and is currently written with a SkySpark instance in mind, as the REST API endpoints are generated based on the `haystack.project` variable along with other parameters like so:
     `ABOUT: [PROTOCOL]://[HOST]:[PORT]/api/[PROJECT]/about`
 
-    The following is the contents of the 
+    The following is the contents of the file `config/default_example.json`:
     
     ```
     {
         "mqtt": {
-            "gatewayId": "0x132",
             "host": "mqtt.com",
             "port": 18883,
             "authentication": {
@@ -55,11 +54,10 @@ For BACnet connection the [Node BACstack](https://github.com/fh1ch/node-bacstack
             "defaultSchedule": "*/30 * * * * *"
         },
         "collector": {
-            "indexFile": "./data/index.json",
-            "dataFolder": "./data/"
+            "dataFolder": "./data"
         },
         "bacnet": {
-            "configFolder": "./devices/",
+            "configFolder": "./devices",
             "defaultSchedule": "*/30 * * * * *"
         },
         "haystack": {
@@ -199,7 +197,7 @@ I will be adding the following docs in a later commit:
 ## CODE TODO
 
 I will be adding the following functionality in a later commit:
-* ~~ Use more generically derived value for "gatewayId" value instead of that found in `config/default.json` file (e.g. using node-machine-id package?). ~~
+* ~~Use more generically derived value for "gatewayId" value instead of that found in `config/default.json` file (e.g. using node-machine-id package?).~~
 * Detect and record ReadPropertyMultiple support in a device. Use this support value to more effectively read objects from BACnet devices.
 * Use templates in device polling configuration file(s), to account for multiple devices with the same effective objects lists (very common, especially with B-ASC profiles).
 * Update device polling configurations to allow designation of whether or not to trend an object value.
