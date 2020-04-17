@@ -11,7 +11,7 @@ class BacnetConfig extends EventEmitter {
         fs.readdir(devicesFolder, (error, files) => {
             if (error) {
                 fs.mkdir(devicesFolder,(error2)=>{
-                    logger.log('error', `Error Creating Config Folder: ${error2}`);
+                    if(error2) logger.log('error', `Error Creating Config Folder: ${error2}`);
                 });
             } else {
                 logger.log('info', `Device configs found: ${files}`);
