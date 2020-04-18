@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "test": "mocha tests/**.js"
   },
   "author": "Dennis Nobel",
   "license": "Apache2",
@@ -23,5 +24,8 @@
     "npm": "^6.14.4",
     "winston": "^3.2.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^7.1.1"
+  }
 }
