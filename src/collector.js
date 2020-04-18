@@ -15,24 +15,6 @@ class Collector extends EventEmitter {
             }
         });
     }
-    test(){
-        this.rebuildIndex().then(()=>{
-            const data ={id:"testPoint-123",type:"float",comm:{driver:"bacnet",deviceId:10000,address:"192.168.1.45",type:2,instance:0}}; 
-            const ts = (new Date()).getTime();
-            const dataSet = [
-                {ts:ts-30000,val:Math.random()},
-                {ts:ts-20000,val:Math.random()},
-                {ts:ts-10000,val:Math.random()}
-            ]
-            this.update(data).then(()=>{
-                this.enqueue(data.id,dataSet).then(()=>{
-                    this.query(data.id,ts-50000).then((data)=>{
-                        logger.info('Collector Query Result: '+JSON.stringify(data));
-                    })
-                });
-            })
-        })
-    }
     getIndex(){
         return this.index;
     }
@@ -74,7 +56,7 @@ class Collector extends EventEmitter {
     }
     destroy(){
         this.emit('destroy');
-        this.detachAllListeners();
+        this.removeAllListeners();
     }
     enqueue(id,data){
         return new Promise((resolve,reject)=>{
@@ -132,7 +114,7 @@ class Collector extends EventEmitter {
                 return null;
             }
         }).filter((item)=>{
-            return item.ts > start && (noEnd || item.ts <= end);
+            return item && item.ts > start && (noEnd || item.ts <= end);
         });
     }
     query(id,start,end){
