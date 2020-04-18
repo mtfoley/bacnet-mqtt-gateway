@@ -10,7 +10,9 @@ const logger = createLogger({
         logFormat
         //format.json()
     ),
-    transports: [new transports.Console()],
+    transports: [new transports.Console({
+        silent:(process.env.NODE_ENV ==='test')
+    })]
 });
 
 class DeviceObjectId {
