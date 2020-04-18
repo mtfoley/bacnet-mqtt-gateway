@@ -1,0 +1,34 @@
+{
+    "mqtt": {
+        "host": "mqtt.com",
+        "port": 18883,
+        "authentication": {
+            "username": "",
+            "password": ""
+        },
+        "defaultSchedule": "*/30 * * * * *"
+    },
+    "collector": {
+        "dataFolder": "./data"
+    },
+    "bacnet": {
+        "configFolder": "./devices",
+        "defaultSchedule": "*/30 * * * * *"
+    },
+    "haystack": {
+        "protocol": "https",
+        "host": "haystack.org",
+        "project":"project",
+        "port": 443,
+        "authentication": {
+            "username": "user",
+            "password": "pencil"    
+        },
+        "pingSchedule": "*/1 * * * * *",
+        "pushSchedule": "*/1 * * * * *"
+    },
+    "httpServer": {
+        "enabled": true,
+        "port": 8082
+    }
+}
