@@ -96,16 +96,12 @@ describe('Collector', function() {
     });
   });
   describe('#destroy()',function(){
-    it('should emit destroy event',function(){
-      let flag = true;
+    it('should emit destroy event',function(done){
       coll.once('destroy',function(event){
-        flag = false;
         assert.ok(1);
+        done();
       });
       coll.destroy();
-      setTimeout(function(){
-        if(flag == true) assert.fail('No Event');
-      },250);
     });
   });
 });
