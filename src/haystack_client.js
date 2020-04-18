@@ -87,28 +87,6 @@ class HaystackClient extends EventEmitter {
             });
         });
     }
-    test(){
-        const self = this;
-        this.connect().then(()=>{
-            const id = "@dev10000_3_1"
-            /*this.commit({
-                id:id,
-                dis:"\"testPoint\""
-            }).then(data=>console.log(data)).catch((error)=>console.log(error))
-            */
-            
-            /*this.hisWrite(id,[
-                {ts:(new Date()).getTime(),val:56.4}
-            ]).then((eventName,data)=>console.log(data)).catch((error)=>console.log(error));
-            */
-            this.hisRead(id,"today").then((eventName,data)=>{
-
-                logger.info(JSON.stringify(self._decodeJson(data)))
-            }).catch((error)=>{
-                logger.error('Haystack HisRead Error: '+error);
-            });
-        }).catch((error)=>{logger.error(error);});
-    }
     _encodeZinc(obj){
         let zinc = [];
         for(var k in obj){
@@ -202,6 +180,7 @@ class HaystackClient extends EventEmitter {
     destroy(){
         logger.info('Haystack Client Destroy');
         if(this.pingJob) this.pingJob.cancel();
+        if(this.pushJob) this.pushJob.cancel();
         this.removeAllListeners();
     }
     ping(){
@@ -214,21 +193,6 @@ class HaystackClient extends EventEmitter {
             self.authToken = null;
             self.connect();
         });
-    }
-    hisRead(id,range){
-        const self = this;
-        const grid = [
-            "ver: \"3.0\"",
-            "id,range",
-            `${id},"${range}"`
-        ].join('\n');
-        return new Promise((resolve,reject)=>{
-            axios.post(self.paths.HIS_READ,grid).then((response)=>{
-                resolve(this._decodeJson(response.data));
-            }).catch((error)=>{
-                reject(error);
-            })
-        })
     }
     connect(){
         const self = this;
