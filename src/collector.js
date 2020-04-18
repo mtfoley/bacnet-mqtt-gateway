@@ -99,7 +99,7 @@ class Collector extends EventEmitter {
     }
     cleanup(id,start){
         return new Promise((resolve,reject)=>{
-            if(id && start){
+            if(id && typeof start == 'number'){
                 this.query(id,start).then((data)=>{
                     const lines = data.map(JSON.stringify).join("\n")+"\n";
                     const file = this.options.dataFolder+"/"+id+'.dat';
