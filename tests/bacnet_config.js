@@ -34,67 +34,87 @@ const path2 = `${devicesFolder}/_device.${exampleConfig2.device.deviceId}.json`;
 const path3 = `${devicesFolder}/device.${exampleConfig3.device.deviceId}.json`;
 const path4 = `${devicesFolder}/device.${exampleConfig4.device.deviceId}.json`;
 const bacnetConfig = new BacnetConfig();
+before((done)=>{
+    if(fs.existsSync(path1)) fs.unlinkSync(path1);
+    if(fs.existsSync(path2)) fs.unlinkSync(path2);
+    if(fs.existsSync(path3)) fs.unlinkSync(path3);
+    if(fs.existsSync(path4)) fs.unlinkSync(path4);
+    done();
+});
 
 describe('BacnetConfig', function() {
-    before((done)=>{
-        if(fs.existsSync(path1)) fs.unlinkSync(path1);
-        if(fs.existsSync(path4)) fs.unlinkSync(path4);
-        done();
-    })
-    describe('Initial Lifecycle',function(){
-        describe('#save(deviceConfig)',function(){
-            it(`Saves File Successfully (${path1})`,function(done){
-                bacnetConfig.save(exampleConfig1);
-                fs.stat(path1,(err,stats)=>{
-                    if(err) assert.fail();
-                    else if(stats.isFile()) assert.ok(1);
+    describe('#save(deviceConfig)',function(){
+        it('Saves File Successfully',function(done){
+            bacnetConfig.save(exampleConfig1,(err)=>{
+                if(err){
+                    assert.fail(err);
+                    done(err);
+                } else {
+                    assert.ok(1);
                     done();
-                });
+                }
             });
         });
-        describe('#load()',function(){
-            it('Emits Example Config Added',function(done){
-                bacnetConfig.on('configLoaded',(config)=>{
-                    if(config.device.deviceId == exampleConfig1.device.deviceId){
-                        assert.deepEqual(config,exampleConfig1);
-                        done();
-                    }
-                });
-                bacnetConfig.load();
-            });
-        });    
     });
+    describe('#load()',function(){
+        it('Emits Example Config Added',function(done){
+            bacnetConfig.on('configLoaded',(config)=>{
+                if(config.device.deviceId == exampleConfig1.device.deviceId){
+                    assert.deepEqual(config,exampleConfig1);
+                    done();
+                }
+            });
+            bacnetConfig.load();
+        });
+    });    
     describe('Deactivation',function(){
         it('Follows Naming Convention',function(done){
             bacnetConfig.save(exampleConfig2);
-            bacnetConfig.deactivate(exampleConfig2.device.deviceId);
-            fs.stat(path2,(err,stats)=>{
-                if(err) assert.fail();
-                else if(stats.isFile()) assert.ok(1);
-                done();
+            bacnetConfig.deactivate(exampleConfig2.device.deviceId,(err)=>{
+                if(err){
+                    assert.fail(err);
+                    done(err);
+                } else {
+                    assert.ok(1);
+                    done();
+                }
             });
     });
     });
     describe('Activation',function(){
         it('Follows Naming Convention',function(done){
-            bacnetConfig.save(exampleConfig3);
-            bacnetConfig.deactivate(exampleConfig3.device.deviceId);
-            bacnetConfig.activate(exampleConfig3.device.deviceId);
-            fs.stat(path3,(err,stats)=>{
-                if(err) assert.fail();
-                else if(stats.isFile()) assert.ok(1);
-                done();
+            bacnetConfig.save(exampleConfig3,(err)=>{
+                bacnetConfig.deactivate(exampleConfig3.device.deviceId,(err1)=>{
+                    if(err1){
+                        assert.fail('Could Not Initially Deactivate'+err1);
+                        done(err1);
+                    } else {
+                        bacnetConfig.activate(exampleConfig3.device.deviceId,(err2)=>{
+                            if(err2){
+                                assert.fail(err2);
+                                done(err2);
+                            } else {
+                                assert.ok(1);
+                                done();
+                            }
+                        });
+                    }
+                });    
             });
         });
     });
     describe('#delete(deviceId)',function(){
         it('Removes File',function(done){
             bacnetConfig.save(exampleConfig4);
-            bacnetConfig.delete(exampleConfig4.device.deviceId);
-            setTimeout(function(){
-                assert.ok(fs.existsSync(path4) === false);
-                done();
-            },10);
+            bacnetConfig.delete(exampleConfig4.device.deviceId,(err)=>{
+                if(err){
+                    assert.fail(err);
+                    done(err);
+                } else {
+                    assert.ok(1);
+                    done();
+                }
+            });
         });
     });
     describe('#unload()',function(){
@@ -107,4 +127,11 @@ describe('BacnetConfig', function() {
         });
     });
 
+});
+after((done)=>{
+    if(fs.existsSync(path1)) fs.unlinkSync(path1);
+    if(fs.existsSync(path2)) fs.unlinkSync(path2);
+    if(fs.existsSync(path3)) fs.unlinkSync(path3);
+    if(fs.existsSync(path4)) fs.unlinkSync(path4);
+    done();
 });

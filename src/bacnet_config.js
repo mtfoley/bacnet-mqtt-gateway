@@ -36,7 +36,7 @@ class BacnetConfig extends EventEmitter {
     unload(){
         this.emit('configUnloaded');
     }
-    save(deviceConfig) {
+    save(deviceConfig,callback) {
         const filename = `device.${deviceConfig.device.deviceId}.json`;
         fs.writeFile(devicesFolder + "/"+filename, JSON.stringify(deviceConfig, null, 4), function (err) {
             if (err) {
@@ -44,25 +44,28 @@ class BacnetConfig extends EventEmitter {
             } else {
                 logger.log('info', `Config file '${filename}' successfully saved.`);
             }
+            if(callback) callback(err);
         });
     }
-    deactivate(deviceId){
+    deactivate(deviceId,callback){
         const filename = devicesFolder + `/device.${deviceId}.json`;
         const newFileName = devicesFolder + `/_device.${deviceId}.json`;
         fs.rename(filename,newFileName,(err)=>{
             if(err) logger.log('error',`Error while deactivating config file: ${err}`);
             else logger.log('info',`Config file '${filename} successfully deactivated.`);
+            if(callback) callback(err);
         })
     }
-    activate(deviceId){
+    activate(deviceId,callback){
         const filename = devicesFolder + `/_device.${deviceId}.json`;
         const newFileName = devicesFolder + `/device.${deviceId}.json`;
         fs.rename(filename,newFileName,(err)=>{
             if(err) logger.log('error',`Error while activating config file: ${err}`);
             else logger.log('info',`Config file '${filename} successfully activated.`);
+            if(callback) callback(err);
         })
     }
-    delete(deviceId) {
+    delete(deviceId,callback) {
         const filename = devicesFolder + `/device.${deviceId}.json`;
         fs.unlink(filename, (err) => {
             if (err) {
@@ -70,6 +73,7 @@ class BacnetConfig extends EventEmitter {
             } else {
                 logger.log('info', `Config file '${filename}' successfully deleted.`);
             }
+            if(callback) callback(err);
         });
     }
 }
