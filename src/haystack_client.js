@@ -2,6 +2,7 @@ const config = require('config');
 const dayjs = require('dayjs');
 var utc = require('dayjs/plugin/utc');
 dayjs.extend(utc);
+const url = require('url');
 const dns = require('dns');
 const axios = require('axios').default;
 const haystackAuth = require('@skyfoundry/haystack-auth');
@@ -21,11 +22,9 @@ class HaystackClient extends EventEmitter {
         this.options = config.get('haystack');
         this.pingJob = null;
         this.paths = {
-            ABOUT: this._makePath('about'),
-            READ: this._makePath('read'),
-            HIS_WRITE: this._makePath('hisWrite'),
-            HIS_READ: this._makePath('hisRead'),
-            COMMIT: this._makePath('commit')
+            ABOUT: this.options.baseUrl+'/about',
+            HIS_WRITE: this.options.baseUrl+'/hisWrite',
+            COMMIT: this.options.baseUrl+'/commit'
         };
     }
     commitTrend(trend){
@@ -162,9 +161,6 @@ class HaystackClient extends EventEmitter {
         grid.push(this._encodeZinc(config));
         return grid.join("\n");
     }
-    _makePath(path){
-        return this.options.protocol+'://'+this.options.host+':'+this.options.port+'/api/'+this.options.project+'/'+path;
-    }
     _postGrid(path,grid){
         return new Promise((resolve,reject)=>{
             axios.post(path,grid).then((response)=>{
@@ -197,7 +193,8 @@ class HaystackClient extends EventEmitter {
     connect(){
         const self = this;
         return new Promise((resolve,reject)=>{
-            dns.lookup(self.options.host,(err)=>{
+            let host = (new URL(self.options.baseUrl)).hostname;
+            dns.lookup(host,(err)=>{
                 if(err){
                     reject('DNS Error: '+err);
                 } else {
@@ -205,10 +202,10 @@ class HaystackClient extends EventEmitter {
                         let context = null;
                         try {
                             context = new haystackAuth.AuthClientContext(
-                                self.paths.ABOUT,
+                                self.options.baseUrl,
                                 self.options.authentication.username,
                                 self.options.authentication.password,
-                                (self.options.protocol=='https')
+                                self.options.reject || (self.paths.ABOUT.substr(0,5)=='https')
                             );    
                         } catch(error){
                             reject(error);

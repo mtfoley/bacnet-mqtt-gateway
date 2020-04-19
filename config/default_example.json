@@ -16,11 +16,7 @@
         "defaultSchedule": "*/30 * * * * *"
     },
     "haystack": {
-        "gatewayId": "0x132",
-        "protocol": "https",
-        "host": "haystack.org",
-        "project":"project",
-        "port": 443,
+        "baseUrl": "https://haystack.org/haystack",
         "authentication": {
             "username": "username",
             "password": "password"    

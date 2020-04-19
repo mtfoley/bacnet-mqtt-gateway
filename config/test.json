@@ -16,10 +16,7 @@
         "defaultSchedule": "*/30 * * * * *"
     },
     "haystack": {
-        "protocol": "https",
-        "host": "haystack.org",
-        "project":"project",
-        "port": 443,
+        "baseUrl": "https://github.com/haystack",
         "authentication": {
             "username": "user",
             "password": "pencil"    
