@@ -8,6 +8,7 @@ const devicesFolder = config.get('bacnet.configFolder');
 class BacnetConfig extends EventEmitter {
     constructor(callback){
         super();
+        if(!callback) callback = ()=>{};
         fs.stat(devicesFolder,(error,stats)=>{
             if(error){
                 fs.mkdir(devicesFolder,(error2)=>{
