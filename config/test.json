@@ -9,10 +9,10 @@
         "defaultSchedule": "*/30 * * * * *"
     },
     "collector": {
-        "dataFolder": "./data"
+        "dataFolder": "./test-data"
     },
     "bacnet": {
-        "configFolder": "./devices",
+        "configFolder": "./test-devices",
         "defaultSchedule": "*/30 * * * * *"
     },
     "haystack": {

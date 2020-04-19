@@ -6,7 +6,19 @@ const { DeviceObjectId, DeviceObject, logger } = require('./common');
 const devicesFolder = config.get('bacnet.configFolder');
 
 class BacnetConfig extends EventEmitter {
-
+    constructor(callback){
+        super();
+        fs.stat(devicesFolder,(error,stats)=>{
+            if(error){
+                fs.mkdir(devicesFolder,(error2)=>{
+                    if(error2) callback(error2);
+                    else callback(null);
+                });
+            } else {
+                callback(null);
+            }
+        });
+    }
     load() {
         fs.readdir(devicesFolder, (error, files) => {
             if (error) {

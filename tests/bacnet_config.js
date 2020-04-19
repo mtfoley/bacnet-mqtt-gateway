@@ -33,7 +33,7 @@ const path1 = `${devicesFolder}/device.${exampleConfig1.device.deviceId}.json`;
 const path2 = `${devicesFolder}/_device.${exampleConfig2.device.deviceId}.json`;
 const path3 = `${devicesFolder}/device.${exampleConfig3.device.deviceId}.json`;
 const path4 = `${devicesFolder}/device.${exampleConfig4.device.deviceId}.json`;
-const bacnetConfig = new BacnetConfig();
+let bacnetConfig = null;
 before((done)=>{
     if(fs.existsSync(path1)) fs.unlinkSync(path1);
     if(fs.existsSync(path2)) fs.unlinkSync(path2);
@@ -43,6 +43,15 @@ before((done)=>{
 });
 
 describe('BacnetConfig', function() {
+    describe('#constructor()',function(){
+        it('Succeeds',function(done){
+            bacnetConfig = new BacnetConfig((error)=>{
+                if(error) assert.fail(error);
+                else assert.ok(1);
+                done();
+            });
+        });
+    });
     describe('#save(deviceConfig)',function(){
         it('Saves File Successfully',function(done){
             bacnetConfig.save(exampleConfig1,(err)=>{
@@ -58,13 +67,20 @@ describe('BacnetConfig', function() {
     });
     describe('#load()',function(){
         it('Emits Example Config Added',function(done){
+            let flag = true;
             bacnetConfig.on('configLoaded',(config)=>{
                 if(config.device.deviceId == exampleConfig1.device.deviceId){
                     assert.deepEqual(config,exampleConfig1);
-                    done();
+                    flag = false;
                 }
             });
             bacnetConfig.load();
+            setTimeout(()=>{
+                if(flag){
+                    assert.fail('No configLoaded Event');
+                }
+                done();
+            },25);
         });
     });    
     describe('Deactivation',function(){
@@ -133,5 +149,6 @@ after((done)=>{
     if(fs.existsSync(path2)) fs.unlinkSync(path2);
     if(fs.existsSync(path3)) fs.unlinkSync(path3);
     if(fs.existsSync(path4)) fs.unlinkSync(path4);
+    fs.rmdirSync(devicesFolder);
     done();
 });

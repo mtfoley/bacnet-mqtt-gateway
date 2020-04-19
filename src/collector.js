@@ -7,6 +7,7 @@ class Collector extends EventEmitter {
     constructor(){
         super();
         this.options = config.get('collector');
+        this.index = {};
         fs.stat(this.options.dataFolder,(error,stats)=>{
             if(error){
                 fs.mkdir(this.options.dataFolder,{},(error)=>{
@@ -19,18 +20,24 @@ class Collector extends EventEmitter {
         return this.index;
     }
     rebuildIndex(){
-        this.index = {};
         return new Promise((resolve,reject)=>{
             fs.readFile(this.options.dataFolder+"/index.json", 'utf8', (error, contents) => {
                 if (error) {
                     logger.info(`Collector Index File Not Found`);
                     this.index = {};
                     this.emit('indexed', this.index);
-                    return this.update({});
-                } else {
-                    this.index = JSON.parse(contents);
                     resolve(this.index);
-                    this.emit('indexed', this.index);
+                } else {
+                    try{
+                        this.index = JSON.parse(contents);
+                        this.emit('indexed', this.index);
+                        resolve(this.index);
+                    } catch(error) {
+                        this.emit('error',error);
+                        reject(error);
+                    } finally {
+                        resolve(this.index);
+                    }
                 }
             });        
         });

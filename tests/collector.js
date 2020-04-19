@@ -1,13 +1,17 @@
+const fs = require('fs');
 const { Collector } = require("../src/collector.js");
 const assert = require('assert');
+var coll = null;
+const exampleTrend = {id:'collector-test',source:'test'};
+const date = new Date();
+const exampleData = [
+  {ts:date.getTime(),val:0.5},
+  {ts:date.getTime()+5,val:0.7}
+];
+before(function(done){
+  done();
+});
 describe('Collector', function() {
-  var coll = null;
-  const exampleTrend = {id:'collector-test',source:'test'};
-  const date = new Date();
-  const exampleData = [
-    {ts:date.getTime(),val:0.5},
-    {ts:date.getTime()+5,val:0.7}
-  ];
   describe('#constructor()',function(){
     it('should instantiate',function(){
       coll = new Collector();
@@ -39,7 +43,7 @@ describe('Collector', function() {
     });
   });
   describe('#rebuildIndex()',function(){
-    it('should succed with rebuilding index',function(){
+    it('should succeed with rebuilding index',function(){
       return coll.rebuildIndex().then(()=>{
         assert.ok(1);
       });
@@ -104,4 +108,11 @@ describe('Collector', function() {
       coll.destroy();
     });
   });
+});
+after(function(done){
+  if(coll){
+    fs.unlinkSync(coll.options.dataFolder+"/"+exampleTrend.id+".dat");
+    fs.rmdirSync(coll.options.dataFolder,{recursive:true});
+    done();
+  }
 });
