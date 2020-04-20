@@ -19,12 +19,16 @@ describe('MqttClient',function(){
     });
     describe('#constructor()',function(){
         it('authenticates',function(done){
+            let usernameRcvd = '';
+            const timeout = setTimeout(function(){
+                assert.equal(usernameRcvd,mqttConfig.authentication.username);
+                done();
+            },200);
             aedes.authenticate = function(client,username,password,callback){
-                assert.equal(username,mqttConfig.authentication.username);
+                usernameRcvd = username;
                 callback(null,true);
             }
             mqttClient = new MqttClient();
-            setTimeout(done,50);
         });
         it('has a non-null pingJob',function(done){
             assert.notEqual(null,mqttClient.pingJob);
@@ -37,7 +41,7 @@ describe('MqttClient',function(){
                 assert.fail();
                 aedes.removeAllListeners('publish');
                 done();
-            },50);
+            },200);
             aedes.on('publish',function(packet,client){
                 if(packet.topic.includes('pollResult')){
                     assert.ok(1);
@@ -55,7 +59,7 @@ describe('MqttClient',function(){
                 assert.fail();
                 aedes.removeAllListeners('publish');
                 done();
-            },50);
+            },200);
             aedes.on('publish',function(packet,client){
                 if(packet.topic.includes('commandResult')){
                     assert.ok(1);
@@ -101,7 +105,7 @@ describe('MqttClient',function(){
                 const timeout = setTimeout(function(){
                     assert.fail(`No Event for ${eventName}`);
                     done();
-                },50);
+                },200);
                 if(cmdTopic == ''){
                     clearTimeout(timeout);
                     assert.fail('No Command Topic Found on Server');
