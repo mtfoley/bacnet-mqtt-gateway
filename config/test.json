@@ -1,19 +1,20 @@
 {
     "mqtt": {
-        "host": "mqtt.com",
-        "port": 18883,
+        "host": "localhost",
+        "port": 1883,
+        "protocol": "mqtt",
         "authentication": {
-            "username": "",
-            "password": ""
+            "username": "mqtt-user",
+            "password": "mqtt-password"
         },
-        "defaultSchedule": "*/30 * * * * *"
+        "defaultSchedule": "*/1 * * * * *"
     },
     "collector": {
         "dataFolder": "./test-data"
     },
     "bacnet": {
         "configFolder": "./test-devices",
-        "defaultSchedule": "*/30 * * * * *"
+        "defaultSchedule": "*/1 * * * * *"
     },
     "haystack": {
         "baseUrl": "https://github.com/haystack",

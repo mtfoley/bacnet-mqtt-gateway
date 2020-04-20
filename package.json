@@ -25,6 +25,7 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
+    "aedes": "^0.41.0",
     "chai": "^4.2.0",
     "mocha": "^7.1.1",
     "nock": "^12.0.3",
