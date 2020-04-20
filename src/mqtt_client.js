@@ -10,7 +10,7 @@ const gatewayId = machineIdSync(true);
 // const gatewayId = config.get('mqtt.gatewayId');
 const host = config.get('mqtt.host');
 const port = config.get('mqtt.port');
-
+const protocol = config.get('mqtt.protocol');
 //const certPath = config.get('mqtt.authentication.certPath');
 //const keyPath = config.get('mqtt.authentication.keyPath');
 
@@ -25,12 +25,12 @@ class MqttClient extends EventEmitter {
         var options = {
             host: host,
             port: port,
-            protocol: 'mqtts',
+            protocol: protocol,
             username: username,
             password: password,
             rejectUnauthorized: false
         }
-
+        this.pingJob = null;
         this.client = mqtt.connect(options);
         this.client.on('connect', () => {
             this._onConnect();
@@ -41,7 +41,9 @@ class MqttClient extends EventEmitter {
     }
     destroy(){
         logger.info('MQTT Client Destroy');
+        if(this.pingJob) this.pingJob.cancel();
         this.client.removeAllListeners();
+        this.client.end();
         this.removeAllListeners();
     }
     _onConnect() {
@@ -50,9 +52,9 @@ class MqttClient extends EventEmitter {
         this.client.on('error', function (err) { logger.info('MQTT Error: '+err); });
         this.client.subscribe('devices/'+gatewayId+'/commands');
         this.client.subscribe('devices/'+gatewayId+'/update');
-        scheduleJob(config.get("mqtt.defaultSchedule"), () => {
+        this.pingJob = scheduleJob(config.get("mqtt.defaultSchedule"), () => {
             this.client.publish('devices/presence',JSON.stringify({gatewayId:gatewayId}));
-        });
+        }); 
     };
     
     _onMessage(topic,msg) {
