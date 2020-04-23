@@ -1,3 +1,4 @@
+const os = require('os');
 const mqtt = require('mqtt');
 const config = require('config');
 const { machineIdSync } = require('node-machine-id');
@@ -53,7 +54,13 @@ class MqttClient extends EventEmitter {
         this.client.subscribe('devices/'+gatewayId+'/commands');
         this.client.subscribe('devices/'+gatewayId+'/update');
         this.pingJob = scheduleJob(config.get("mqtt.defaultSchedule"), () => {
-            this.client.publish('devices/presence',JSON.stringify({gatewayId:gatewayId}));
+            this.client.publish('devices/presence',JSON.stringify({
+                gatewayId:gatewayId,
+                hostname:os.hostname(),
+                release:os.release(),
+                arch:os.arch(),
+                platform:os.platform()
+            }));
         }); 
     };
     
