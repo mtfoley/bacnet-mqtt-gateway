@@ -111,6 +111,7 @@ describe('Collector', function() {
 });
 after(function(done){
   if(coll){
+    fs.unlinkSync(coll.options.dataFolder+"/index.json");
     fs.unlinkSync(coll.options.dataFolder+"/"+exampleTrend.id+".dat");
     fs.rmdirSync(coll.options.dataFolder,{recursive:true});
     done();
