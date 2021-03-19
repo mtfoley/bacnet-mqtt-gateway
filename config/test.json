@@ -9,6 +9,7 @@
         },
         "defaultSchedule": "*/1 * * * * *"
     },
+    "devicesFolder": "./test-devices",
     "collector": {
         "dataFolder": "./test-data"
     },

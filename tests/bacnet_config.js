@@ -3,43 +3,81 @@ const fs = require('fs');
 const { BacnetConfig } = require("../src/bacnet_config.js");
 const assert = require('assert');
 const config = require('config');
-const devicesFolder = config.get('bacnet.configFolder');
 
-const exampleConfig1 = {
-    device:{
-        deviceId: 150001,
-        address:"127.0.0.1"
+const devicesFolder = config.get('devicesFolder');
+
+let deviceConfigs = {
+    devices: {
+        '150001':{
+            device:{
+                deviceId: 150001,
+                address: '127.0.0.1'
+            },
+            objects:[{
+                "objectId": {
+                    "type": 0,
+                    "instance": 50
+                },
+                "name": "standbyCoolSetpoint|A1st Floor HP's-4",
+                "description": "",
+                "type": 0,
+                "units": 64,
+                "presentValue": 77.01000213623047
+            },
+            {
+                "objectId": {
+                    "type": 1,
+                    "instance": 1
+                },
+                "name": "spaceSetpoint|A4th Floor HP's-1",
+                "description": "",
+                "type": 1,
+                "units": 64,
+                "presentValue": 72.50399780273438
+            }]
+        },
+        '150002':{
+            template:'tstat',
+            device:{
+                deviceId: 150002,
+                address: '127.0.0.1'
+            }
+        }
+    },
+    templates: {
+        'tstat':{
+            name:'tstat',
+            objects:[{
+                "objectId": {
+                    "type": 0,
+                    "instance": 1
+                },
+                "name": "zone temp",
+                "description": "zone temperature",
+                "type": 0,
+                "units": 64,
+                "presentValue": 77.01000213623047
+            },
+            {
+                "objectId": {
+                    "type": 1,
+                    "instance": 1
+                },
+                "name": "setpoint",
+                "description": "setpoint",
+                "type": 1,
+                "units": 64,
+                "presentValue": 72.50399780273438
+            }]
+        }
     }
-};
-const exampleConfig2 = {
-    device:{
-        deviceId: 150002,
-        address:"127.0.0.1"
-    }
-};
-const exampleConfig3 = {
-    device:{
-        deviceId: 150003,
-        address:"127.0.0.1"
-    }
-};
-const exampleConfig4 = {
-    device:{
-        deviceId: 150004,
-        address:"127.0.0.1"
-    }
-};
-const path1 = `${devicesFolder}/device.${exampleConfig1.device.deviceId}.json`;
-const path2 = `${devicesFolder}/_device.${exampleConfig2.device.deviceId}.json`;
-const path3 = `${devicesFolder}/device.${exampleConfig3.device.deviceId}.json`;
-const path4 = `${devicesFolder}/device.${exampleConfig4.device.deviceId}.json`;
-let bacnetConfig = null;
+}
+const configFilePath = devicesFolder + "/bacnet.json";
 before((done)=>{
-    if(fs.existsSync(path1)) fs.unlinkSync(path1);
-    if(fs.existsSync(path2)) fs.unlinkSync(path2);
-    if(fs.existsSync(path3)) fs.unlinkSync(path3);
-    if(fs.existsSync(path4)) fs.unlinkSync(path4);
-    done();
+    fs.mkdirSync(devicesFolder);
+    if(fs.existsSync(configFilePath)) fs.unlinkSync(configFilePath);
+    const json = JSON.stringify(deviceConfigs,null,4);
+    fs.writeFile(configFilePath, json,done);
 });
 
 describe('BacnetConfig', function() {
@@ -52,27 +90,12 @@ describe('BacnetConfig', function() {
             });
         });
     });
-    describe('#save(deviceConfig)',function(){
-        it('Saves File Successfully',function(done){
-            bacnetConfig.save(exampleConfig1,(err)=>{
-                if(err){
-                    assert.fail(err);
-                    done(err);
-                } else {
-                    assert.ok(1);
-                    done();
-                }
-            });
-        });
-    });
     describe('#load()',function(){
         it('Emits Example Config Added',function(done){
             let flag = true;
-            bacnetConfig.on('configLoaded',(config)=>{
-                if(config.device.deviceId == exampleConfig1.device.deviceId){
-                    assert.deepEqual(config,exampleConfig1);
-                    flag = false;
-                }
+            bacnetConfig.on('configLoaded',(ids)=>{
+                assert.ok(ids.length);
+                flag = false;
             });
             bacnetConfig.load();
             setTimeout(()=>{
@@ -83,10 +106,9 @@ describe('BacnetConfig', function() {
             },25);
         });
     });    
-    describe('Deactivation',function(){
-        it('Follows Naming Convention',function(done){
-            bacnetConfig.save(exampleConfig2);
-            bacnetConfig.deactivate(exampleConfig2.device.deviceId,(err)=>{
+    describe('#save(callback)',function(){
+        it('Saves File Successfully',function(done){
+            bacnetConfig.save((err)=>{
                 if(err){
                     assert.fail(err);
                     done(err);
@@ -95,43 +117,89 @@ describe('BacnetConfig', function() {
                     done();
                 }
             });
+        });
     });
+    describe('#saveTemplate(name,config,callback)',function(){
+        it('Emits saveTemplate event',function(done){
+            let flag = true;
+            let expected = 'tstat';
+            bacnetConfig.on('templateSaved',(name)=>{
+                assert.equal(name,expected);
+                flag = false;
+            });
+            bacnetConfig.saveTemplate('tstat',deviceConfigs.templates['tstat'],(err,name)=>{
+                assert.equal(err,null);
+                assert.equal(name,expected);                
+            });
+            setTimeout(()=>{
+                if(flag){
+                    assert.fail('No templateSaved Event');
+                }
+                done();
+            },25);
+        })
+
+    });
+    
+    describe('Deactivation',function(){
+        it('Emits deactivated event',function(done){
+            let flag = true;
+            let expected = '150001';
+            bacnetConfig.on('deactivated',(deviceId)=>{
+                assert.equal(deviceId,expected);
+                flag = false;
+            });
+            bacnetConfig.deactivate(expected,(err,deviceId)=>{
+                assert.equal(err,null);
+                assert.equal(deviceId,expected);                
+            });
+            setTimeout(()=>{
+                if(flag){
+                    assert.fail('No deactivated Event');
+                }
+                done();
+            },25);
+        })
     });
     describe('Activation',function(){
-        it('Follows Naming Convention',function(done){
-            bacnetConfig.save(exampleConfig3,(err)=>{
-                bacnetConfig.deactivate(exampleConfig3.device.deviceId,(err1)=>{
-                    if(err1){
-                        assert.fail('Could Not Initially Deactivate'+err1);
-                        done(err1);
-                    } else {
-                        bacnetConfig.activate(exampleConfig3.device.deviceId,(err2)=>{
-                            if(err2){
-                                assert.fail(err2);
-                                done(err2);
-                            } else {
-                                assert.ok(1);
-                                done();
-                            }
-                        });
-                    }
-                });    
+        it('Emits activated event',function(done){
+            let flag = true;
+            let expected = '150001';
+            bacnetConfig.on('activated',(deviceId)=>{
+                assert.equal(deviceId,expected);
+                flag = false;
             });
-        });
+            bacnetConfig.activate(expected,(err,deviceId)=>{
+                assert.equal(err,null);
+                assert.equal(deviceId,expected);                
+            });
+            setTimeout(()=>{
+                if(flag){
+                    assert.fail('No deactivated Event');
+                }
+                done();
+            },25);
+        })
     });
     describe('#delete(deviceId)',function(){
-        it('Removes File',function(done){
-            bacnetConfig.save(exampleConfig4);
-            bacnetConfig.delete(exampleConfig4.device.deviceId,(err)=>{
-                if(err){
-                    assert.fail(err);
-                    done(err);
-                } else {
-                    assert.ok(1);
-                    done();
-                }
+        it('Emits deleted event',function(done){
+            let flag = true;
+            let expected = '150001';
+            bacnetConfig.on('deleted',(deviceId)=>{
+                assert.equal(deviceId,expected);
+                flag = false;
             });
-        });
+            bacnetConfig.delete(expected,(err,deviceId)=>{
+                assert.equal(err,null);
+                assert.equal(deviceId,expected);                
+            });
+            setTimeout(()=>{
+                if(flag){
+                    assert.fail('No deleted Event');
+                }
+                done();
+            },25);
+        })
     });
     describe('#unload()',function(){
         it('Emits Config Unloaded',function(done){
@@ -145,10 +213,7 @@ describe('BacnetConfig', function() {
 
 });
 after((done)=>{
-    if(fs.existsSync(path1)) fs.unlinkSync(path1);
-    if(fs.existsSync(path2)) fs.unlinkSync(path2);
-    if(fs.existsSync(path3)) fs.unlinkSync(path3);
-    if(fs.existsSync(path4)) fs.unlinkSync(path4);
+    if(fs.existsSync(configFilePath)) fs.unlinkSync(configFilePath);
     fs.rmdirSync(devicesFolder);
     done();
 });
