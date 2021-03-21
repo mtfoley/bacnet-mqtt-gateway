@@ -10,7 +10,7 @@ class BacnetClient extends EventEmitter {
     constructor(collector) {
         super();
         this.collector = collector;
-        this.client = new bacnet({ apduTimeout: 10000 });
+        this.client = new bacnet({});
         this.jobs = {};
         this.bacnetConfig = new BacnetConfig();
         this.bacnetConfig.on('configLoaded', (config) => {
@@ -199,6 +199,7 @@ class BacnetClient extends EventEmitter {
                     });
                 } else {
                     logger.log('error', `Error while fetching objects: ${err}`);
+                    reject(err);
                 }
             });
         });
