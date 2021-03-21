@@ -32,6 +32,8 @@ class Server {
         this.bacnetClient.on('deviceFound', eventListener);
         this.bacnetClient.scanForDevices().then(devices=>{
             res.send(devices);
+        }).catch(error=>{
+            res.send([]);
         });
     }
 
@@ -50,6 +52,8 @@ class Server {
                 this.bacnetClient.startPolling(config.device, config.objects, config.polling.schedule);
             }
             res.send(deviceObjects);
+        }).catch(error=>{
+            res.send([]);
         });
     }
 

@@ -39,6 +39,9 @@ Vue.component('device-scan', {
             }).then(response => {
                 this.objects = response.data;
                 this.loading = false;
+            }).catch(error=>{
+                this.objects = [];
+                this.loading = false;
             });
         },
         getObjects(device) {
