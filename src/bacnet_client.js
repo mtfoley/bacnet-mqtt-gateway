@@ -14,7 +14,10 @@ class BacnetClient extends EventEmitter {
         this.jobs = {};
         this.bacnetConfig = new BacnetConfig();
         this.bacnetConfig.on('configLoaded', (config) => {
-            this.startPolling(config.device, config.objects, config.polling.schedule||appConfig.get("bacnet.defaultSchedule"));
+            if(config.device && config.objects){
+                this.startPolling(config.device, config.objects, config.polling.schedule||appConfig.get("bacnet.defaultSchedule"));
+
+            }
         });
         this.bacnetConfig.load();
     }
@@ -247,7 +250,9 @@ class BacnetClient extends EventEmitter {
         }
     }
     saveConfig(config) {
-        this.bacnetConfig.save(config);
+        this.bacnetConfig.updateDevice(config,(err,id)=>{
+            if(!err) this.bacnetConfig.save();
+        });
     }
     deactivate(params){
         this.stopPolling(params);
