@@ -187,6 +187,7 @@ class HaystackClient extends EventEmitter {
             self.emit('pingSuccess',data);
         }).catch(()=>{
             self.authToken = null;
+            self.emit('pingFailure');
             self.connect();
         });
     }
