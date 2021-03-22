@@ -93,8 +93,8 @@ describe('BacnetConfig', function() {
     describe('#load()',function(){
         it('Emits Example Config Added',function(done){
             let flag = true;
-            bacnetConfig.on('configLoaded',(ids)=>{
-                assert.ok(ids.length);
+            bacnetConfig.on('configLoaded',(config)=>{
+                assert.ok(config == null || (config.hasOwnProperty("device") && config.hasOwnProperty("objects")));
                 flag = false;
             });
             bacnetConfig.load();
@@ -106,19 +106,6 @@ describe('BacnetConfig', function() {
             },25);
         });
     });    
-    describe('#save(callback)',function(){
-        it('Saves File Successfully',function(done){
-            bacnetConfig.save((err)=>{
-                if(err){
-                    assert.fail(err);
-                    done(err);
-                } else {
-                    assert.ok(1);
-                    done();
-                }
-            });
-        });
-    });
     describe('#saveTemplate(name,config,callback)',function(){
         it('Emits saveTemplate event',function(done){
             let flag = true;
@@ -140,7 +127,19 @@ describe('BacnetConfig', function() {
         })
 
     });
-    
+    describe('#save(callback)',function(){
+        it('Saves File Successfully',function(done){
+            bacnetConfig.save((err)=>{
+                if(err){
+                    assert.fail(err);
+                    done(err);
+                } else {
+                    assert.ok(1);
+                    done();
+                }
+            });
+        });
+    });
     describe('Deactivation',function(){
         it('Emits deactivated event',function(done){
             let flag = true;

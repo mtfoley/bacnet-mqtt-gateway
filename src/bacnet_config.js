@@ -8,6 +8,10 @@ const devicesFolder = config.get('devicesFolder');
 class BacnetConfig extends EventEmitter {
     constructor(callback){
         super();
+        let self = this;
+        self.templates = {};
+        self.devices = {};
+            
         if(!callback) callback = ()=>{};
         fs.stat(devicesFolder,(error,stats)=>{
             if(error){
@@ -26,16 +30,17 @@ class BacnetConfig extends EventEmitter {
         // objects definition to expand into the device definitions.
         let self = this;
         fs.readFile(devicesFolder+"/bacnet.json",'utf8',(err,contents)=>{
-            self.templates = {};
-            self.devices = {};
+            if(err){
+                self.emit('configLoadError',err);
+                return;
+            }
             try {
                 const bacnetConfigs = JSON.parse(contents);
                 self.templates = bacnetConfigs.templates;
                 self.devices = bacnetConfigs.devices;
-                
-            } catch(err){
-                self.emit('error','Error reading BACnet configurations');
-                logger.log('error', `Error while reading config file: ${err}`);
+            } catch(err2){
+                self.emit('configLoadError','Error reading BACnet configurations');
+                logger.log('error', `Error while reading config file: ${err2}`);
                 return;
             }
             for(var k in self.devices){
@@ -45,8 +50,9 @@ class BacnetConfig extends EventEmitter {
                         self.devices[k].objects = [...self.templates[tpl].objects];
                     }
                 }
+                self.emit('configLoaded',self.devices[k]);
             }
-            self.emit('configLoaded',Object.keys(self.devices));
+            self.emit('configLoaded',null);
         });
     }
     unload(){
@@ -65,11 +71,16 @@ class BacnetConfig extends EventEmitter {
         callback(null,name);
     }
     updateDevice(config,callback){
-
+        let self = this;
+        const id = config.device.address+'_'+config.device.deviceId;
+        self.devices[id] = Object.assign({},config);
+        self.emit('configSaved',id);
+        callback(null,id);
     }
     save(callback) {
         let self = this;
         let configs = {templates:{},devices:{}};
+        configs.devices = Object.assign({},self.devices);
         configs.templates = Object.assign({},self.templates);
         for(let k in self.templates){
             configs.templates[k] = {name:self.templates[k].name, values:self.templates[k].values};    
